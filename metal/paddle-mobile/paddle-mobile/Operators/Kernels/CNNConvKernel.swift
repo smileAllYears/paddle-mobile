@@ -13,11 +13,11 @@ class WeightsDataSource: NSObject, MPSCNNConvolutionDataSource  {
     
     let desc: MPSCNNConvolutionDescriptor
     let weight:UnsafeMutableRawPointer
-    let bias:UnsafeMutablePointer<Float>
+    let bias:UnsafeMutablePointer<Float32>
     
     
     
-    init(inDesc: MPSCNNConvolutionDescriptor, inWeight: UnsafeMutableRawPointer, inBias: UnsafeMutablePointer<Float>) {
+    init(inDesc: MPSCNNConvolutionDescriptor, inWeight: UnsafeMutableRawPointer, inBias: UnsafeMutablePointer<Float32>) {
         desc = inDesc
         weight = inWeight
         bias = inBias
@@ -58,6 +58,7 @@ class WeightsDataSource: NSObject, MPSCNNConvolutionDataSource  {
 class CNNConvParam<P: PrecisionType>: OpParam{
     
     typealias ParamPrecisionType = P
+    
     required init(opDesc: OpDesc, inScope: Scope) throws {
         do {
             filter = try CNNConvParam.inputFilter(paraInputs: opDesc.paraInputs, from: inScope)
@@ -73,6 +74,7 @@ class CNNConvParam<P: PrecisionType>: OpParam{
             variance = try CNNConvParam.inputVariance(inputs: opDesc.paraInputs, from: inScope)
             // bias
             y = try CNNConvParam.inputY(inputs: opDesc.paraInputs, from: inScope)
+            
         } catch let error {
             throw error
         }
@@ -94,7 +96,7 @@ class CNNConvKernel<P: PrecisionType>: Kernel, Computable {
     
     typealias ParamType = CNNConvParam<P>
     
-    var mpsImageCreator: MpsImageCreator<P>?
+    var mpsImageCreator: MpsImageCreator<Float>
     var activation:MPSCNNNeuron?
     var conv:MPSCNNConvolution?
     var weightDataSource:WeightsDataSource?
@@ -107,11 +109,13 @@ class CNNConvKernel<P: PrecisionType>: Kernel, Computable {
         
         let desc = MPSCNNConvolutionDescriptor(kernelWidth: testParam.filterSize.width, kernelHeight: testParam.filterSize.height, inputFeatureChannels: testParam.filterSize.channel, outputFeatureChannels: testParam.filterSize.channel, neuronFilter: activation)
         
-        desc.strideInPixelsX = Int(testParam.metalParam.offsetX)
-        desc.strideInPixelsY = Int(testParam.metalParam.offsetY)
+        desc.strideInPixelsX = Int(testParam.metalParam.strideX)
+        desc.strideInPixelsY = Int(testParam.metalParam.strideY)
         
         
         weightDataSource = WeightsDataSource(inDesc: desc, inWeight:testParam.filterPointer, inBias:testParam.biasePointer)
+        
+        mpsImageCreator = testParam.mpsImageCreator
         
         if #available(iOS 11.0, *) {
             conv = MPSCNNConvolution(device: self.device!, weights: weightDataSource!)
@@ -119,7 +123,7 @@ class CNNConvKernel<P: PrecisionType>: Kernel, Computable {
             // Fallback on earlier versions
         }
         
-        super.init(device: device, inFunctionName: "")
+        super.init(device: device, inFunctionName: "conv_add_batch_norm_relu_1x1")
     }
 
     required init(device:MTLDevice, param:CNNConvParam<P>) {
@@ -142,8 +146,10 @@ class CNNConvKernel<P: PrecisionType>: Kernel, Computable {
         desc.strideInPixelsX = Int(param.stride[0])
         desc.strideInPixelsY = Int(param.stride[1])
         
+        mpsImageCreator = MpsImageCreator.init(device: self.device!, inData: param.input.metalTexture)
         
-        weightDataSource = WeightsDataSource(inDesc: desc, inWeight:param.filter.data.pointer as! UnsafeMutablePointer<Float>, inBias: param.y.data.pointer as! UnsafeMutablePointer<Float>)
+        
+        weightDataSource = WeightsDataSource(inDesc: desc, inWeight:param.filter.data.pointer as! UnsafeMutablePointer<Float32>, inBias: param.y.data.pointer as! UnsafeMutablePointer<Float32>)
         
         if #available(iOS 11.0, *) {
             conv = MPSCNNConvolution(device: self.device!, weights: weightDataSource!)
@@ -151,12 +157,12 @@ class CNNConvKernel<P: PrecisionType>: Kernel, Computable {
             // Fallback on earlier versions
         }
         
-        super.init(device: device, inFunctionName: "")
+        super.init(device: device, inFunctionName: "conv_add_batch_norm_relu_1x1")
     }
 
     func compute(commandBuffer: MTLCommandBuffer, param: CNNConvParam<P>) throws {
-        let inputImage:MPSImage = (mpsImageCreator?.createMPSImage(device: device!))!
-        var outputImage = (mpsImageCreator?.createMPSImage(device: device!))!
+        let inputImage:MPSImage = (mpsImageCreator.createMPSImage(device: device!))!
+        var outputImage = (mpsImageCreator.createMPSImage(device: device!))!
         
         // 运算conv和add两个步骤，add用了bias偏差做为参数，被Metal API进行调用
         conv?.encode(commandBuffer: commandBuffer, sourceImage: inputImage, destinationImage: outputImage)
@@ -165,8 +171,8 @@ class CNNConvKernel<P: PrecisionType>: Kernel, Computable {
     }
     
     func testCompute(commandBuffer: MTLCommandBuffer, testParam: CNNMPSConvTestParam) throws {
-        let inputImage:MPSImage = (mpsImageCreator?.createMPSImage(device: device!))!
-        var outputImage = (mpsImageCreator?.createMPSImage(device: device!))!
+        let inputImage:MPSImage = (mpsImageCreator.createMPSImage(device: device!))!
+        var outputImage = (mpsImageCreator.createMPSImage(device: device!))!
         
         // 运算conv和add两个步骤，add用了bias偏差做为参数，被Metal API进行调用
         conv?.encode(commandBuffer: commandBuffer, sourceImage: inputImage, destinationImage: outputImage)

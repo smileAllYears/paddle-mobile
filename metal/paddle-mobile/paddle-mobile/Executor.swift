@@ -62,9 +62,19 @@ public class Executor<P: PrecisionType> {
                 let op = block.ops[i]
                 do {
                     if #available(iOS 10.0, *) {
-                        let op = try OpCreator<P>.shared.creat(device: inDevice, opDesc: op, scope: inProgram.scope)
-                        op.inferShape()
-                        ops.append(op)
+                        if op.type == "conv_add_batchnorm_relu" {
+                            let mpsOp = try OpCreator<P>.shared.creatMPSConv(device: inDevice, opDesc: op, scope: inProgram.scope)
+                            mpsOp.inferShape()
+                            ops.append(mpsOp)
+                            
+                            let br = try OpCreator<P>.shared.creatBatchNormRelu(device: inDevice, opDesc: op, scope: inProgram.scope)
+                            br.inferShape()
+                            ops.append(br)
+                        } else {
+                            let op = try OpCreator<P>.shared.creat(device: inDevice, opDesc: op, scope: inProgram.scope)
+                            op.inferShape()
+                            ops.append(op)
+                        }
                     } else {
                         // Fallback on earlier versions
                     }

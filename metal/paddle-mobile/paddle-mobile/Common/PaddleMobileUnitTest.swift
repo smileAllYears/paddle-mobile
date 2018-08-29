@@ -110,7 +110,7 @@ public class PaddleMobileUnitTest {
         
         let metalParam = MetalConvParam.init(offsetX: Int16(offsetX), offsetY: Int16(offsetY), offsetZ: 0, strideX: UInt16(stride.0), strideY: UInt16(stride.1), paddedZ: UInt16(paddings.0))
         
-        let mpsParam = CNNMPSConvTestParam.init(inMetalParam: metalParam, inFilter: filter, inBiase: biase, inFilterSize: filterSize)
+        let mpsParam = CNNMPSConvTestParam.init(inDevice:device, inInputImageData: input, inMetalParam: metalParam, inFilter: filter, inBiase: biase, inFilterSize: filterSize)
         
         let mpsConvKernel = CNNConvKernel<Float>.init(device: device, testParam: mpsParam)
         

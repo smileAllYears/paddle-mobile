@@ -586,7 +586,7 @@
 					"@loader_path/Frameworks",
 				);
 				MTL_LANGUAGE_REVISION = UseDeploymentTarget;
-				PRODUCT_BUNDLE_IDENTIFIER = "orange.paddle-mobile";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.baidu.paddle-mobile";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 4.0;
@@ -614,7 +614,7 @@
 					"@loader_path/Frameworks",
 				);
 				MTL_LANGUAGE_REVISION = UseDeploymentTarget;
-				PRODUCT_BUNDLE_IDENTIFIER = "orange.paddle-mobile";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.baidu.paddle-mobile";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 4.0;

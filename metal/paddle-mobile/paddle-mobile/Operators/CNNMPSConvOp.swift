@@ -5,16 +5,23 @@
 import Foundation
 
 class CNNMPSConvTestParam: TestParam {
+    let inputImageData:[Float]
     var outputTexture: MTLTexture?
     var metalParam: MetalConvParam
     let filterPointer: UnsafeMutableRawPointer
     let biasePointer: UnsafeMutablePointer<Float>
     let filterSize: (width: Int, height: Int, channel: Int)
-    init(inMetalParam: MetalConvParam, inFilter: [Float], inBiase: [Float], inFilterSize: (width: Int, height: Int, channel: Int)) {
+    var mpsImageCreator: MpsImageCreator<Float>
+    var device: MTLDevice
+    
+    init(inDevice:MTLDevice, inInputImageData:[Float], inMetalParam: MetalConvParam, inFilter: [Float], inBiase: [Float], inFilterSize: (width: Int, height: Int, channel: Int)) {
+        device = inDevice
+        inputImageData = inInputImageData
         metalParam = inMetalParam
         filterPointer = UnsafeMutableRawPointer.init(mutating: inFilter)
         biasePointer = UnsafeMutablePointer.init(mutating: inBiase)
         filterSize = inFilterSize
+        mpsImageCreator = MpsImageCreator.init(device: device, testfilter: filterSize, data: inputImageData)
     }
 }
 
@@ -23,9 +30,9 @@ class CNNMPSConvOp<P: PrecisionType>: Operator<CNNConvKernel<P>, CNNConvParam<P>
     
     typealias OpType = CNNMPSConvOp<P>
 
-    required init(device: MTLDevice, opDesc: OpDesc, inScope: Scope) throws {
-        fatalError()
-    }
+//    required init(device: MTLDevice, opDesc: OpDesc, inScope: Scope) throws {
+//        fatalError()
+//    }
     
     func runImpl(device: MTLDevice, buffer: MTLCommandBuffer) throws {
         do {

@@ -13,6 +13,14 @@ class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        let device = MTLCreateSystemDefaultDevice()
+        let mcQueue = device?.makeCommandQueue()
+        
+        let pmUnitTest = PaddleMobileUnitTest.init(inDevice: device!, inQueue: mcQueue!)
+        
+        pmUnitTest.testMps()
+        
         print(" done ")
     }
 

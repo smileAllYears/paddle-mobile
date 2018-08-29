@@ -27,6 +27,29 @@ class OpCreator<P: PrecisionType> {
             return newSingleton
         }
     }
+    func creatMPSConv(device: MTLDevice, opDesc: OpDesc, scope: Scope) throws -> Runable & InferShaperable {
+
+        guard let opCreator = opCreators[gMPSCNNConvType] else {
+            throw PaddleMobileError.opError(message: "there is no " + opDesc.type + " yet")
+        }
+        
+        do {
+            return try opCreator(device, opDesc, scope)
+        } catch let error {
+            throw error
+        }
+    }
+    func creatBatchNormRelu(device: MTLDevice, opDesc: OpDesc, scope: Scope) throws -> Runable & InferShaperable {
+        guard let opCreator = opCreators[gBatchNormReluType] else {
+            throw PaddleMobileError.opError(message: "there is no " + opDesc.type + " yet")
+        }
+        
+        do {
+            return try opCreator(device, opDesc, scope)
+        } catch let error {
+            throw error
+        }
+    }
     
     func creat(device: MTLDevice, opDesc: OpDesc, scope: Scope) throws -> Runable & InferShaperable {
         guard let opCreator = opCreators[opDesc.type] else {

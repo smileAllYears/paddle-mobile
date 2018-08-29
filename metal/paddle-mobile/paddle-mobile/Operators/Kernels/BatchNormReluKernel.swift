@@ -81,7 +81,7 @@ class BatchNormReluKernel<P: PrecisionType>: Kernel, Computable{
         }
         encoder.setTexture(testParam.inputTexture, index: 0)
         encoder.setTexture(testParam.outputTexture, index: 1)
-        encoder.setBuffer(newScale, offset: 0, index: 1)
+        encoder.setBuffer(newScale, offset: 0, index: 0)
         encoder.setBuffer(newBias, offset: 0, index: 1)
         encoder.dispatch(computePipline: pipline, outTexture: testParam.outputTexture)
         encoder.endEncoding()

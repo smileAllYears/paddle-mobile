@@ -134,25 +134,45 @@ public class MpsImageCreator<P: PrecisionType>: Tensorial {
     public var debugDescription: String
 
     var dim: Dim
+    var imageData:[Float] = []
     var width: Int?
     var height: Int?
     var channels: Int?
     var mpsImage:MPSImage?
-
-    init(device: MTLDevice, inDim: Dim) {
+    var data: MTLTexture?
+    
+    
+    init(device:MTLDevice, testfilter:(width: Int, height: Int, channel: Int),data:[Float]) {
         layout = DataLayout.NHWC
         description = ""
         debugDescription = ""
+        
+        dim = Dim.init(inDim: [])
+        
+        imageData = data
+        width = testfilter.width
+        height = testfilter.height
+        channels = testfilter.channel
+    }
 
-        dim = inDim
-        if dim.cout() == 2 {
-            width = inDim[0]
-            channels = inDim[1]
-        } else if dim.cout() == 4 {
-            width = inDim[2]
-            height = inDim[1]
-            channels = inDim[3]
-        }
+    init(device: MTLDevice, inData:MTLTexture) {
+        layout = DataLayout.NHWC
+        description = ""
+        debugDescription = ""
+        data = inData
+
+        dim = Dim.init(inDim: [])
+//        dim = inDim
+//
+//        imageData = []
+//        if dim.cout() == 2 {
+//            width = inDim[0]
+//            channels = inDim[1]
+//        } else if dim.cout() == 4 {
+//            width = inDim[2]
+//            height = inDim[1]
+//            channels = inDim[3]
+//        }
     }
     
     func createMPSImageDes() -> MPSImageDescriptor? {
@@ -164,15 +184,12 @@ public class MpsImageCreator<P: PrecisionType>: Tensorial {
     
     
     func createMPSImage(device: MTLDevice) -> MPSImage? {
-        let desc = self.createMPSImageDes()
-        guard desc != nil else {
-            return nil
-        }
-        mpsImage = MPSImage(device: device, imageDescriptor: desc!)
-
+        
+        mpsImage = MPSImage.init(texture: data!, featureChannels: channels!)
+        
+        
         return mpsImage
     }
-
 
 }
 
